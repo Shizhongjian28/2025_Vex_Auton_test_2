@@ -22,19 +22,23 @@ motor_group leftMotors(leftMotor1, leftMotor2, leftMotor3);
 motor_group rightMotors(rightMotor1, rightMotor2, rightMotor3);
 
 // --- PID constants ---
-double kP = 0.5;
-double kI = 0.0;
-double kD = 0.05;
+double kP = 20;
+double kI = 0.1;
+double kD = 10;
 
 // --- Straight correction constant ---
 double kTurn = 0.05; // how much to correct difference between sides
 
 // --- Acceleration & Deceleration control ---
-double maxAccel = 3.0;   // % increase per loop (20ms)
-double maxDecel = 3.0;   // % decrease per loop (20ms)
+double maxAccel = 1;   // % increase per loop (20ms)
+double maxDecel = 0.5;   // % decrease per loop (20ms)
 
 // --- Global speed limit ---
-double maxSpeedGlobal = 80.0;  // maximum % motor output (set lower to slow everything down)
+double maxSpeedGlobal = 25;  // maximum % motor output (set lower to slow everything down)
+
+//
+double global_distance_scalar=0.211;
+
 
 void drivePID(double targetDistanceInches, double maxSpeed = maxSpeedGlobal) {
   // Reset positions
@@ -100,44 +104,38 @@ void drivePID(double targetDistanceInches, double maxSpeed = maxSpeedGlobal) {
   rightMotors.stop(brake);
 }
 
-// --- Driver control setup ---
+void pid(double distance){
+  drivePID(distance*global_distance_scalar,maxSpeedGlobal);
+}
+
+// user driving control
 controller Controller1 = controller(primary);
 
 void drive(double forward, double turn) {
-  double leftSpeed = forward + turn * 0.65;
-  double rightSpeed = forward - turn * 0.65;
+  double leftSpeed = forward + turn*0.65;
+  double rightSpeed = forward - turn*0.65;
 
-  // Apply global max speed limit
-  if (leftSpeed > maxSpeedGlobal) leftSpeed = maxSpeedGlobal;
-  if (leftSpeed < -maxSpeedGlobal) leftSpeed = -maxSpeedGlobal;
-  if (rightSpeed > maxSpeedGlobal) rightSpeed = maxSpeedGlobal;
-  if (rightSpeed < -maxSpeedGlobal) rightSpeed = -maxSpeedGlobal;
+  if (leftSpeed > 100) leftSpeed = 100;
+  if (leftSpeed < -100) leftSpeed = -100;
+  if (rightSpeed > 100) rightSpeed = 100;
+  if (rightSpeed < -100) rightSpeed = -100;
   
-  leftMotors.spin(forward, leftSpeed, pct);
-  rightMotors.spin(forward, rightSpeed, pct);
+  leftMotors.spin(directionType::fwd, leftSpeed, velocityUnits::pct);
+  
+  rightMotors.spin(directionType::fwd, rightSpeed, velocityUnits::pct);
+
 }
 
 void usercontrol(void) {  
-  while (true) {
-    double forward = Controller1.Axis3.position();
-    double turn = Controller1.Axis1.position() * 0.8;
-
-    double leftSpeed = forward + turn;
-    double rightSpeed = forward - turn;
-
-    // Apply global max speed limit
-    if (leftSpeed > maxSpeedGlobal) leftSpeed = maxSpeedGlobal;
-    if (leftSpeed < -maxSpeedGlobal) leftSpeed = -maxSpeedGlobal;
-    if (rightSpeed > maxSpeedGlobal) rightSpeed = maxSpeedGlobal;
-    if (rightSpeed < -maxSpeedGlobal) rightSpeed = -maxSpeedGlobal;
-
-    leftMotors.spin(forward, leftSpeed, pct);
-    rightMotors.spin(forward, rightSpeed, pct);
+  while(true){
+    leftMotors.setVelocity(Controller1.Axis3.position()+Controller1.Axis1.position()*0.8, percent);
+    rightMotors.setVelocity(Controller1.Axis3.position()-Controller1.Axis1.position()*0.8, percent);
+    leftMotors.spin(forward);
+    rightMotors.spin(forward);
     wait(5, msec);
   }
 }
 
-// --- Intake / Scoring Controls ---
 void eat(void){
   BottomIntake.spin(forward, 100, percent);
 }
@@ -161,35 +159,40 @@ void stopall(void){
   UpOrDown.stop(brake);
 }
 
-// --- Main autonomous sequence ---
 int main() {
+  // eat();
+  pid(120);
+  wait(1000, msec);
+  pid(-120);
+  stopall();
+  /*
+  //turn
+  drivePID(3);
+  scorebottom();
+  wait(1000, msec);
+  stopall();
+  drivePID(-5);
+  //turn
   eat();
   drivePID(24);
   stopall();
+  drivePID(-24);
+  //turn
+  drivePID(5);
+  //turn
+  drivePID(20);
+  scoretop();
+  wait(1000, msec);
+  stopall();
+  eat();
+  drivePID(-20);
+  wait(1000, msec);
+  stopall();
+  drivePID(5);
+  //end
+  */
 
-  // drivePID(3);
-  // scorebottom();
-  // wait(1000, msec);
-  // stopall();
 
-  // drivePID(-5);
-  // eat();
-  // drivePID(24);
-  // stopall();
-
-  // drivePID(-24);
-  // drivePID(5);
-  // drivePID(20);
-  // scoretop();
-  // wait(1000, msec);
-  // stopall();
-
-  // eat();
-  // drivePID(-20);
-  // wait(1000, msec);
-  // stopall();
-  // drivePID(5);
-
-  // --- Manual driver control for testing ---
+  // driver control for testing
   usercontrol();
 }
