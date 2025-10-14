@@ -4,17 +4,20 @@ using namespace vex;
 
 // --- Devices (adjust ports as needed) ---
 brain Brain;
-// Left motors (reverse if necessary)
+//intake motors
+motor BottomIntake = motor(PORT6, ratio18_1, false);
+motor UpOrDown = motor(PORT10, ratio18_1, false);
+motor UpperIntake = motor(PORT2, ratio18_1, false);
+
+
+// driver motors
 motor leftMotor1(PORT19, ratio18_1, true);
 motor leftMotor2(PORT16, ratio18_1, true);
 motor leftMotor3(PORT17, ratio18_1, true);
-
-// Right motors
 motor rightMotor1(PORT20, ratio18_1, false);
 motor rightMotor2(PORT18, ratio18_1, false);
 motor rightMotor3(PORT8,  ratio18_1, false);
-
-// Motor groups
+// driver Motor groups
 motor_group leftMotors(leftMotor1, leftMotor2, leftMotor3);
 motor_group rightMotors(rightMotor1, rightMotor2, rightMotor3);
 
@@ -124,14 +127,59 @@ void usercontrol(void) {
   }
 }
 
-
+void eat(void){
+  BottomIntake.spin(forward, 100, percent);
+}
+void scoretop(void){
+  BottomIntake.spin(forward, 100, percent);
+  UpperIntake.spin(forward, 100, percent);
+  UpOrDown.spin(reverse, 100, percent);
+}
+void scorebottom(void){
+  UpOrDown.spin(forward, 100, percent);
+  BottomIntake.spin(forward, 100, percent);
+  UpperIntake.spin(forward, 100, percent);
+}
+void spill(void){
+  BottomIntake.spin(reverse, 100, percent);
+  UpperIntake.spin(reverse, 100, percent);
+}
+void stopall(void){
+  BottomIntake.stop(brake);
+  UpperIntake.stop(brake);
+  UpOrDown.stop(brake);
+}
 
 int main() {
-  // For testing only
+  eat();
   drivePID(24);
-  wait(500, msec);
+  stopall();
+  //turn
+  drivePID(3);
+  scorebottom();
+  wait(1000, msec);
+  stopall();
+  drivePID(-5);
+  //turn
+  eat();
+  drivePID(24);
+  stopall();
   drivePID(-24);
+  //turn
+  drivePID(5);
+  //turn
+  drivePID(20);
+  scoretop();
+  wait(1000, msec);
+  stopall();
+  eat();
+  drivePID(-20);
+  wait(1000, msec);
+  stopall();
+  drivePID(5);
+  //end
 
-  // If you want to still have driver control after auton:
+
+  // driver control for testing
   usercontrol();
 }
