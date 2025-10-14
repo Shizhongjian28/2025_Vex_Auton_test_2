@@ -39,7 +39,7 @@ double maxAccel = 1;   // % increase per loop (20ms)
 double maxDecel = 0.5;   // % decrease per loop (20ms)
 
 // --- Global speed limit ---
-double maxSpeedGlobal = 25;  // maximum % motor output (set lower to slow everything down)
+double maxSpeedGlobal = 30;  // maximum % motor output (set lower to slow everything down)
 
 //
 double global_distance_scalar=0.211;
@@ -233,41 +233,42 @@ int main() {
   wait(500, msec);
   Brain.Screen.clearScreen();
   Brain.Screen.print("Calibration Done");
-  // eat();
-  turnPID(-120);
-  wait(1000, msec);
-  turnPID(120);
-  wait(1000, msec);
-  pid(120);
-  wait(1000, msec);
-  pid(-120);
-  stopall();
-  /*
-  //turn
-  drivePID(3);
-  scorebottom();
-  wait(1000, msec);
-  stopall();
-  drivePID(-5);
-  //turn
-  eat();
-  drivePID(24);
-  stopall();
-  drivePID(-24);
-  //turn
-  drivePID(5);
-  //turn
-  drivePID(20);
-  scoretop();
-  wait(1000, msec);
-  stopall();
-  eat();
-  drivePID(-20);
-  wait(1000, msec);
-  stopall();
-  drivePID(5);
-  //end
-  */
+
+  // auton
+  int auton = 3;
+  if (auton==1){
+    eat();
+    pid(100);
+    turnPID(10);
+    wait(1000, msec);
+    turnPID(-10);
+    pid(-30);
+    stopall();
+    turnPID(-30);
+    pid(10);
+    wait(1000, msec);
+  }
+  else if (auton==2){
+    turnPID(-30);
+    pid(50);
+    turnPID(85);
+    eat();
+    pid(20);
+    turnPID(30);
+    pid(10);
+  }
+  else if (auton==3){
+    eat();
+    pid(100);
+    wait(1000,msec);
+    pid(-25);
+    turnPID(-45);
+    pid(15);
+    stopall();
+    spill();
+    wait(1000,msec);
+    stopall();
+  }
 
 
   // driver control for testing
