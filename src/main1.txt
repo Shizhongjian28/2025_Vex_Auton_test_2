@@ -1,0 +1,17 @@
+// Brain should be defined by default
+brain Brain;
+motor ClawMotor = motor(PORT3, ratio18_1, false);
+motor ArmMotor = motor(PORT8, ratio18_1, false);
+// Left motors (some reversed if necessary)
+motor leftMotor1(PORT19, ratio18_1, true);
+motor leftMotor2(PORT16, ratio18_1, true);
+motor leftMotor3(PORT17, ratio18_1, true);
+
+// Right motors
+motor rightMotor1(PORT20, ratio18_1, false);
+motor rightMotor2(PORT18, ratio18_1, false);
+motor rightMotor3(PORT8,  ratio18_1, false);
+
+// Motor groups
+motor_group LeftMotor(leftMotor1, leftMotor2, leftMotor3);
+motor_group RightMotor(rightMotor1, rightMotor2, rightMotor3);
