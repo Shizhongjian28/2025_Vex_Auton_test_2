@@ -1,8 +1,13 @@
 #include "vex.h"
+#include "iostream"
 using namespace vex;
 
 // --- Devices (adjust ports as needed) ---
 brain Brain;
+
+//sensors
+inertial InertialSensor(PORT3); // adjust port as needed
+
 
 // Intake motors
 motor BottomIntake = motor(PORT6, ratio18_1, false);
@@ -103,6 +108,66 @@ void drivePID(double targetDistanceInches, double maxSpeed = maxSpeedGlobal) {
   leftMotors.stop(brake);
   rightMotors.stop(brake);
 }
+void turnPID(double targetDegrees) {
+  // PID constants — tune these!
+  double kP = 0.5; 
+  double kI = 0.001;
+  double kD = 0.2;
+
+  double error = 0;
+  double previousError = 0;
+  double derivative = 0;
+  double integral = 0;
+
+  double threshold = 1.0; // degrees tolerance
+  int timeout = 3000;     // max time (ms)
+  int startTime = vex::timer::system();
+
+  // Reset sensor
+  InertialSensor.resetRotation();
+  while (InertialSensor.isCalibrating()) {
+    vex::wait(20, vex::msec);
+  }
+
+  // Target absolute angle (relative to current heading)
+  double targetAngle = InertialSensor.rotation() + targetDegrees;
+
+  while (true) {
+    double currentAngle = InertialSensor.rotation();
+    error = targetAngle - currentAngle;
+    derivative = error - previousError;
+    integral += error;
+
+    // Prevent integral windup
+    if (fabs(error) < 5) {
+      integral = 0;
+    }
+
+    // PID output
+    double turnPower = (kP * error) + (kI * integral) + (kD * derivative);
+
+    // Cap power to safe limits
+    if (turnPower > 100) turnPower = 100;
+    if (turnPower < -100) turnPower = -100;
+
+    // Apply turn power (opposite directions)
+    leftMotors.spin(fwd, turnPower, pct);
+    rightMotors.spin(reverse, turnPower, pct);
+
+    // Exit when close enough or timed out
+    if (fabs(error) < threshold || vex::timer::system() - startTime > timeout) {
+      break;
+    }
+
+    previousError = error;
+    vex::wait(20, vex::msec);
+  }
+
+  // Stop motors after done
+  leftMotors.stop(brakeType::brake);
+  rightMotors.stop(brakeType::brake);
+}
+
 
 void pid(double distance){
   drivePID(distance*global_distance_scalar,maxSpeedGlobal);
@@ -160,7 +225,19 @@ void stopall(void){
 }
 
 int main() {
+  Brain.Screen.print("Calibrating Inertial...");
+  InertialSensor.calibrate();
+  while (InertialSensor.isCalibrating()) {
+    wait(100, msec);
+  }
+  wait(500, msec);
+  Brain.Screen.clearScreen();
+  Brain.Screen.print("Calibration Done");
   // eat();
+  turnPID(-120);
+  wait(1000, msec);
+  turnPID(120);
+  wait(1000, msec);
   pid(120);
   wait(1000, msec);
   pid(-120);
