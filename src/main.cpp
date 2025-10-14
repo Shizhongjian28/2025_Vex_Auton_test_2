@@ -27,8 +27,8 @@ double kD = 0.05;
 double kTurn = 0.05; // how much to correct difference between sides
 
 // --- Acceleration & Deceleration control ---
-double maxAccel = 4.0;   // maximum % increase per loop (20ms)
-double maxDecel = 4.0;   // maximum % decrease per loop (20ms)
+double maxAccel = 3.0;   // maximum % increase per loop (20ms)
+double maxDecel = 3.0;   // maximum % decrease per loop (20ms)
 
 void drivePID(double targetDistanceInches, double maxSpeed = 80) {
   // Reset positions
@@ -97,7 +97,6 @@ void drivePID(double targetDistanceInches, double maxSpeed = 80) {
 }
 
 // user driving control
-competition Competition;
 controller Controller1 = controller(primary);
 
 void drive(double forward, double turn) {
@@ -128,10 +127,11 @@ void usercontrol(void) {
 
 
 int main() {
-  // Example: drive forward 12 inches
-  drivePID(12);
-  Competition.drivercontrol(usercontrol);
-  while (true) {
-    wait(100, msec);
-  }
+  // For testing only
+  drivePID(24);
+  wait(500, msec);
+  drivePID(-24);
+
+  // If you want to still have driver control after auton:
+  usercontrol();
 }
