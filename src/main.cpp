@@ -4,7 +4,7 @@ using namespace vex;
 
 // --- Devices (adjust ports as needed) ---
 brain Brain;
-// Left motors (some reversed if necessary)
+// Left motors (reverse if necessary)
 motor leftMotor1(PORT19, ratio18_1, true);
 motor leftMotor2(PORT16, ratio18_1, true);
 motor leftMotor3(PORT17, ratio18_1, true);
@@ -17,13 +17,18 @@ motor rightMotor3(PORT8,  ratio18_1, false);
 // Motor groups
 motor_group leftMotors(leftMotor1, leftMotor2, leftMotor3);
 motor_group rightMotors(rightMotor1, rightMotor2, rightMotor3);
+
 // --- PID constants ---
 double kP = 0.5;
 double kI = 0.0;
 double kD = 0.05;
 
-// --- Straight correction constants ---
+// --- Straight correction constant ---
 double kTurn = 0.05; // how much to correct difference between sides
+
+// --- Acceleration & Deceleration control ---
+double maxAccel = 4.0;   // maximum % increase per loop (20ms)
+double maxDecel = 4.0;   // maximum % decrease per loop (20ms)
 
 void drivePID(double targetDistanceInches, double maxSpeed = 80) {
   // Reset positions
@@ -34,6 +39,9 @@ void drivePID(double targetDistanceInches, double maxSpeed = 80) {
   double targetRotDeg = (targetDistanceInches / (4 * M_PI)) * 360.0;
 
   double error = 0, prevError = 0, derivative = 0, integral = 0;
+
+  double currentLeftSpeed = 0;
+  double currentRightSpeed = 0;
 
   while (true) {
     // Get average motor position
@@ -53,21 +61,33 @@ void drivePID(double targetDistanceInches, double maxSpeed = 80) {
     double sideError = leftPos - rightPos;
     double turnCorrection = sideError * kTurn;
 
-    double leftSpeed = drivePower - turnCorrection;
-    double rightSpeed = drivePower + turnCorrection;
+    double targetLeftSpeed = drivePower - turnCorrection;
+    double targetRightSpeed = drivePower + turnCorrection;
 
     // --- Manual bounding (no std::clamp) ---
-    if (leftSpeed > maxSpeed) leftSpeed = maxSpeed;
-    if (leftSpeed < -maxSpeed) leftSpeed = -maxSpeed;
-    if (rightSpeed > maxSpeed) rightSpeed = maxSpeed;
-    if (rightSpeed < -maxSpeed) rightSpeed = -maxSpeed;
+    if (targetLeftSpeed > maxSpeed) targetLeftSpeed = maxSpeed;
+    if (targetLeftSpeed < -maxSpeed) targetLeftSpeed = -maxSpeed;
+    if (targetRightSpeed > maxSpeed) targetRightSpeed = maxSpeed;
+    if (targetRightSpeed < -maxSpeed) targetRightSpeed = -maxSpeed;
+
+    // --- Apply acceleration/deceleration limits ---
+    double leftDelta = targetLeftSpeed - currentLeftSpeed;
+    double rightDelta = targetRightSpeed - currentRightSpeed;
+
+    if (leftDelta > maxAccel) leftDelta = maxAccel;
+    if (leftDelta < -maxDecel) leftDelta = -maxDecel;
+    if (rightDelta > maxAccel) rightDelta = maxAccel;
+    if (rightDelta < -maxDecel) rightDelta = -maxDecel;
+
+    currentLeftSpeed += leftDelta;
+    currentRightSpeed += rightDelta;
 
     // Apply motor velocity
-    leftMotors.spin(forward, leftSpeed, pct);
-    rightMotors.spin(forward, rightSpeed, pct);
+    leftMotors.spin(forward, currentLeftSpeed, pct);
+    rightMotors.spin(forward, currentRightSpeed, pct);
 
     // Exit condition
-    if (fabs(error) < 10) break; // within 10 degrees of target
+    if (fabs(error) < 10) break; // within 10 deg of target
     wait(20, msec);
   }
 
@@ -76,8 +96,42 @@ void drivePID(double targetDistanceInches, double maxSpeed = 80) {
   rightMotors.stop(brake);
 }
 
-int main() {
+// user driving control
+competition Competition;
+controller Controller1 = controller(primary);
 
-  // Example: drive forward 24 inches
+void drive(double forward, double turn) {
+  double leftSpeed = forward + turn*0.65;
+  double rightSpeed = forward - turn*0.65;
+
+  if (leftSpeed > 100) leftSpeed = 100;
+  if (leftSpeed < -100) leftSpeed = -100;
+  if (rightSpeed > 100) rightSpeed = 100;
+  if (rightSpeed < -100) rightSpeed = -100;
+  
+  leftMotors.spin(directionType::fwd, leftSpeed, velocityUnits::pct);
+  
+  rightMotors.spin(directionType::fwd, rightSpeed, velocityUnits::pct);
+
+}
+
+void usercontrol(void) {  
+  while(true){
+    leftMotors.setVelocity(Controller1.Axis3.position()+Controller1.Axis1.position()*0.8, percent);
+    rightMotors.setVelocity(Controller1.Axis3.position()-Controller1.Axis1.position()*0.8, percent);
+    leftMotors.spin(forward);
+    rightMotors.spin(forward);
+    wait(5, msec);
+  }
+}
+
+
+
+int main() {
+  // Example: drive forward 12 inches
   drivePID(12);
+  Competition.drivercontrol(usercontrol);
+  while (true) {
+    wait(100, msec);
+  }
 }
