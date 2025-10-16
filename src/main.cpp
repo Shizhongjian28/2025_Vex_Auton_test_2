@@ -108,6 +108,8 @@ void drivePID(double targetDistanceInches, double maxSpeed = maxSpeedGlobal) {
   leftMotors.stop(brake);
   rightMotors.stop(brake);
 }
+
+double turnThreshold = 2.0; // degrees tolerance
 void turnPID(double targetDegrees) {
   // PID constants — tune these!
   double kP = 0.5; 
@@ -119,7 +121,7 @@ void turnPID(double targetDegrees) {
   double derivative = 0;
   double integral = 0;
 
-  double threshold = 1.0; // degrees tolerance
+  double threshold = turnThreshold;
   int timeout = 3000;     // max time (ms)
   int startTime = vex::timer::system();
 
@@ -198,8 +200,38 @@ void usercontrol(void) {
     leftMotors.spin(forward);
     rightMotors.spin(forward);
     wait(5, msec);
+
+    if (Controller1.ButtonR1.pressing()) {
+      // eat
+      BottomIntake.spin(forward, 100, percent);
+      // UpperIntake.spin(forward, 100, percent);
+      // UpOrDown.spin(forward, 100, percent);
+    } 
+    else if (Controller1.ButtonR2.pressing()) {
+      // score top
+      BottomIntake.spin(forward, 100, percent);
+      UpperIntake.spin(forward, 100, percent);
+      UpOrDown.spin(reverse, 100, percent);
+    } 
+    else if (Controller1.ButtonL1.pressing()) {
+      // spill
+      BottomIntake.spin(reverse, 100, percent);
+      UpperIntake.spin(reverse, 100, percent);
+    } 
+    else if (Controller1.ButtonL2.pressing()) {
+      // score bottom
+      UpOrDown.spin(forward, 100, percent);
+      BottomIntake.spin(forward, 100, percent);
+      UpperIntake.spin(forward, 100, percent);
+    }
+    else {
+      BottomIntake.stop();
+      UpperIntake.stop();
+      UpOrDown.stop();
+    }
   }
 }
+
 
 void eat(void){
   BottomIntake.spin(forward, 100, percent);
@@ -235,6 +267,7 @@ int main() {
   Brain.Screen.print("Calibration Done");
 
   // auton
+  double time=Brain.timer(timeUnits::msec);
   int auton = 3;
   if (auton==1){
     eat();
@@ -258,17 +291,44 @@ int main() {
     pid(10);
   }
   else if (auton==3){
+    maxSpeedGlobal=30;
+    turnThreshold=3.0;
     eat();
-    pid(100);
-    wait(1000,msec);
-    pid(-25);
-    turnPID(-45);
-    pid(15);
+    pid(97);
+    wait(100,msec);
+    maxSpeedGlobal=45;
+    pid(-24);
+    turnPID(-59);
+    pid(25);
     stopall();
     spill();
     wait(1000,msec);
     stopall();
+    pid(-30);
+    turnPID(50);
+    // wait(100,msec);
+    pid(37);
+    wait(100,msec);
+    turnThreshold=1.0;
+    turnPID(79);
+    turnThreshold=3.0;
+    wait(500,msec);
+    eat();
+    maxSpeedGlobal=25;
+    pid(36);
+    wait(300,msec);
+    maxSpeedGlobal=45;
+    pid(-40);
+    wait(200,msec);
+    turnPID(-80);
+    wait(200,msec);
+    pid(-100);
+    stopall();
   }
+  else if (auton==4){
+    pid(-100);
+  }
+  std::cout<<"auton time: "<<Brain.timer(timeUnits::msec)-time<<std::endl;
 
 
   // driver control for testing
