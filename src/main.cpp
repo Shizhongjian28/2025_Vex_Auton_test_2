@@ -269,7 +269,7 @@ int main() {
 
   // auton
   double time=Brain.timer(timeUnits::msec);
-  int auton = 5;
+  int auton = 3;
   if (auton==1){
     eat();
     pid(100);
@@ -294,11 +294,11 @@ int main() {
   else if (auton==3){
     // current: go for three ball, score mid (4), go for long goal 2, come back
     maxSpeedGlobal=30;
-    turnThreshold=3.0;
+    // turnThreshold=3.0;
     eat();
     pid(97);
     wait(100,msec);
-    maxSpeedGlobal=45;
+    maxSpeedGlobal=60;
     pid(-24);
     turnPID(-59);
     pid(25);
@@ -307,20 +307,21 @@ int main() {
     wait(1000,msec);
     stopall();
     pid(-30);
-    turnPID(50);
-    // wait(100,msec);
-    pid(37);
     wait(100,msec);
-    turnThreshold=1.0;
-    turnPID(79);
-    turnThreshold=3.0;
+    turnPID(50);
+    wait(100,msec);
+    pid(39);
+    wait(100,msec);
+    // turnThreshold=1.0;
+    turnPID(90);
+    // turnThreshold=3.0;
     wait(100,msec);
     eat();
     maxSpeedGlobal=25;
-    pid(36);
+    pid(40);
     wait(300,msec);
     maxSpeedGlobal=45;
-    pid(-40);
+    pid(-36);
     wait(200,msec);
     turnPID(-80);
     wait(200,msec);
@@ -328,6 +329,8 @@ int main() {
     stopall();
   }
   else if (auton==4){
+    pid(100);
+    wait(100,msec);
     pid(-100);
   }
   else if (auton==5){
