@@ -112,9 +112,10 @@ void drivePID(double targetDistanceInches, double maxSpeed = maxSpeedGlobal) {
 double turnThreshold = 2.0; // degrees tolerance
 void turnPID(double targetDegrees) {
   // PID constants — tune these!
-  double kP = 0.5; 
-  double kI = 0.001;
-  double kD = 0.2;
+  // 0.7, 0.005, 4.5
+  double kP = 0.7; 
+  double kI = 0.005;
+  double kD = 4.5;
 
   double error = 0;
   double previousError = 0;
@@ -122,7 +123,7 @@ void turnPID(double targetDegrees) {
   double integral = 0;
 
   double threshold = turnThreshold;
-  int timeout = 3000;     // max time (ms)
+  int timeout = 500;     // max time (ms)
   int startTime = vex::timer::system();
 
   // Reset sensor
@@ -268,7 +269,7 @@ int main() {
 
   // auton
   double time=Brain.timer(timeUnits::msec);
-  int auton = 3;
+  int auton = 5;
   if (auton==1){
     eat();
     pid(100);
@@ -313,7 +314,7 @@ int main() {
     turnThreshold=1.0;
     turnPID(79);
     turnThreshold=3.0;
-    wait(500,msec);
+    wait(100,msec);
     eat();
     maxSpeedGlobal=25;
     pid(36);
@@ -328,6 +329,27 @@ int main() {
   }
   else if (auton==4){
     pid(-100);
+  }
+  else if (auton==5){
+    std::cout<<InertialSensor.rotation()<<std::endl;
+    turnThreshold=1.0;
+    turnPID(90);
+    std::cout<<InertialSensor.rotation()<<std::endl;
+    wait(1000,msec);
+    turnPID(-180);
+    std::cout<<InertialSensor.rotation()<<std::endl;
+    wait(1000,msec);
+    turnPID(-90);
+    std::cout<<InertialSensor.rotation()<<std::endl;
+    wait(1000,msec);
+    turnPID(180);
+    std::cout<<InertialSensor.rotation()<<std::endl;
+    wait(1000,msec);
+    turnPID(-135);
+    std::cout<<InertialSensor.rotation()<<std::endl;
+    wait(1000,msec);
+    turnPID(135);
+    std::cout<<InertialSensor.rotation()<<std::endl;
   }
   std::cout<<"auton time: "<<Brain.timer(timeUnits::msec)-time<<std::endl;
 
