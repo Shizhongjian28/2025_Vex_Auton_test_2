@@ -291,6 +291,7 @@ int main() {
     pid(10);
   }
   else if (auton==3){
+    // current: go for three ball, score mid (4), go for long goal 2, come back
     maxSpeedGlobal=30;
     turnThreshold=3.0;
     eat();
