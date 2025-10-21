@@ -1,5 +1,6 @@
 #include "vex.h"
-#include "iostream"
+#include <cmath>
+#include <iostream>
 using namespace vex;
 
 // --- Devices (adjust ports as needed) ---
@@ -27,28 +28,30 @@ motor_group leftMotors(leftMotor1, leftMotor2, leftMotor3);
 motor_group rightMotors(rightMotor1, rightMotor2, rightMotor3);
 
 // --- PID constants ---
-double kP = 20;
-double kI = 0.1;
-double kD = 10;
+double kP = 60;
+double kI = 10;
+double kD = 20;
 
 // --- Straight correction constant ---
 double kTurn = 0.05; // how much to correct difference between sides
 
 // --- Acceleration & Deceleration control ---
-double maxAccel = 1;   // % increase per loop (20ms)
-double maxDecel = 0.5;   // % decrease per loop (20ms)
+double maxAccel = 2;   // % increase per loop (20ms)
+double maxDecel = 2;   // % decrease per loop (20ms)
 
 // --- Global speed limit ---
-double maxSpeedGlobal = 30;  // maximum % motor output (set lower to slow everything down)
+double maxSpeedGlobal = 45;  // maximum % motor output (set lower to slow everything down)
 
 //
 double global_distance_scalar=0.211;
 
-
-void drivePID(double targetDistanceInches, double maxSpeed = maxSpeedGlobal) {
+void drivePID(double targetDistanceInches, double maxSpeed = maxSpeedGlobal, int timeout = 9999999) {
   // Reset positions
   leftMotors.resetPosition();
   rightMotors.resetPosition();
+
+  // Start a timer for timeout tracking
+  int startTime = vex::timer::system();
 
   // Convert inches to degrees (assuming 4" diameter wheels)
   double targetRotDeg = (targetDistanceInches / (4 * M_PI)) * 360.0;
@@ -100,8 +103,15 @@ void drivePID(double targetDistanceInches, double maxSpeed = maxSpeedGlobal) {
     leftMotors.spin(forward, currentLeftSpeed, pct);
     rightMotors.spin(forward, currentRightSpeed, pct);
 
-    // Exit condition
+    // Exit condition: target reached OR timeout exceeded
     if (fabs(error) < 10) break; // within 10 degrees of target
+
+    int elapsed = vex::timer::system() - startTime;
+    if (elapsed > timeout) {
+      Brain.Screen.printAt(10, 30, "drivePID TIMEOUT (%.2f in)", targetDistanceInches);
+      break;
+    }
+
     wait(20, msec);
   }
 
@@ -109,14 +119,22 @@ void drivePID(double targetDistanceInches, double maxSpeed = maxSpeedGlobal) {
   rightMotors.stop(brake);
 }
 
-double turnThreshold = 2.0; // degrees tolerance
+
+double turnThreshold = 1.0; // degrees tolerance
 void turnPID(double targetDegrees) {
   // PID constants — tune these!
   // 0.7, 0.005, 4.5
-  double kP = 0.7; 
+  double kP = 0.63; 
   double kI = 0.005;
-  double kD = 4.5;
-
+  double kD = 3.8;
+  if (std::abs(targetDegrees)<145){
+    kP=0.65;
+    kD=3.8;
+  }
+  if (std::abs(targetDegrees)<100){
+    kP=0.75;
+    kD=5;
+  }
   double error = 0;
   double previousError = 0;
   double derivative = 0;
@@ -172,8 +190,8 @@ void turnPID(double targetDegrees) {
 }
 
 
-void pid(double distance){
-  drivePID(distance*global_distance_scalar,maxSpeedGlobal);
+void pid(double distance, int timeout=9999999){
+  drivePID(distance*global_distance_scalar,maxSpeedGlobal, timeout);
 }
 
 // user driving control
@@ -298,23 +316,44 @@ int main() {
     eat();
     pid(97);
     wait(100,msec);
-    maxSpeedGlobal=60;
-    pid(-24);
-    turnPID(-59);
-    pid(25);
+    maxSpeedGlobal=50;
+    pid(-17);
+    turnPID(-65);
+    pid(20);
     stopall();
     spill();
-    wait(1000,msec);
+    wait(2000,msec);
     stopall();
-    pid(-30);
+    pid(-8);
     wait(100,msec);
-    turnPID(50);
+    turnPID(110);
+    pid(28);
+    wait(100,msec);
+    turnPID(40);
+    wait(100,msec);
+    maxSpeedGlobal=25;
+    eat();
+    pid(30);
+    wait(100,msec);
+    maxSpeedGlobal=45;
+    pid(-10);
+    turnPID(-95);
+    stopall();
+    pid(-60);
+    turnPID(-90);
+    pid(-20);
+    turnPID(-100);
+    pid(-35);
+    maxSpeedGlobal=25;
+    pid(-10, 1000);
+    scoretop();
+    wait(3000,msec);
+    stopall();
+    /*
     wait(100,msec);
     pid(39);
     wait(100,msec);
-    // turnThreshold=1.0;
-    turnPID(90);
-    // turnThreshold=3.0;
+    turnPID(100);
     wait(100,msec);
     eat();
     maxSpeedGlobal=25;
@@ -327,31 +366,33 @@ int main() {
     wait(200,msec);
     pid(-100);
     stopall();
+    */
   }
   else if (auton==4){
-    pid(100);
-    wait(100,msec);
-    pid(-100);
+    pid(120);
+    wait(1000,msec);
+    pid(-120);
   }
   else if (auton==5){
     std::cout<<InertialSensor.rotation()<<std::endl;
     turnThreshold=1.0;
     turnPID(90);
-    std::cout<<InertialSensor.rotation()<<std::endl;
     wait(1000,msec);
+    std::cout<<InertialSensor.rotation()<<std::endl;
     turnPID(-180);
-    std::cout<<InertialSensor.rotation()<<std::endl;
     wait(1000,msec);
+    std::cout<<InertialSensor.rotation()<<std::endl;
     turnPID(-90);
-    std::cout<<InertialSensor.rotation()<<std::endl;
     wait(1000,msec);
+    std::cout<<InertialSensor.rotation()<<std::endl;
     turnPID(180);
-    std::cout<<InertialSensor.rotation()<<std::endl;
     wait(1000,msec);
+    std::cout<<InertialSensor.rotation()<<std::endl;
     turnPID(-135);
-    std::cout<<InertialSensor.rotation()<<std::endl;
     wait(1000,msec);
+    std::cout<<InertialSensor.rotation()<<std::endl;
     turnPID(135);
+    wait(1000,msec);
     std::cout<<InertialSensor.rotation()<<std::endl;
   }
   std::cout<<"auton time: "<<Brain.timer(timeUnits::msec)-time<<std::endl;
