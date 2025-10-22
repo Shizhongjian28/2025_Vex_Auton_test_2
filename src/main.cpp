@@ -287,7 +287,7 @@ int main() {
 
   // auton
   double time=Brain.timer(timeUnits::msec);
-  int auton = 3;
+  int auton = 6;
   if (auton==1){
     eat();
     pid(100);
@@ -374,6 +374,7 @@ int main() {
     pid(-120);
   }
   else if (auton==5){
+    // turn pid test
     std::cout<<InertialSensor.rotation()<<std::endl;
     turnThreshold=1.0;
     turnPID(90);
@@ -394,6 +395,47 @@ int main() {
     turnPID(135);
     wait(1000,msec);
     std::cout<<InertialSensor.rotation()<<std::endl;
+  }
+  else if (auton==6){
+    pid(17);
+    turnPID(60);
+    eat();
+    maxSpeedGlobal=20;
+    pid(50);
+    wait(500,msec);
+    maxSpeedGlobal=65;
+    turnPID(-112);
+    pid(25);
+    stopall();
+    spill();
+    wait(1500,msec);
+    stopall();
+    pid(-8);
+    wait(100,msec);
+    turnPID(100);
+    maxSpeedGlobal=40;
+    pid(30);
+    wait(100,msec);
+    turnPID(40);
+    wait(100,msec);
+    maxSpeedGlobal=25;
+    eat();
+    pid(30);
+    wait(100,msec);
+    maxSpeedGlobal=65;
+    pid(-10);
+    turnPID(-105);
+    stopall();
+    pid(-60);
+    turnPID(-95);
+    pid(-20);
+    turnPID(-88);
+    pid(-30);
+    maxSpeedGlobal=45;
+    pid(-10, 1000);
+    scoretop();
+    wait(3000,msec);
+    stopall();
   }
   std::cout<<"auton time: "<<Brain.timer(timeUnits::msec)-time<<std::endl;
 
