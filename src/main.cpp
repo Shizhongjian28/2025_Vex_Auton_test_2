@@ -437,6 +437,29 @@ int main() {
     wait(3000,msec);
     stopall();
   }
+  else if (auton==7){
+    pid(17);
+    turnPID(60);
+    eat();
+    maxSpeedGlobal=20;
+    pid(50);
+    wait(500,msec);
+    maxSpeedGlobal=65;
+    turnPID(-112);
+    pid(25);
+    stopall();
+    spill();
+    wait(2500,msec);
+    stopall();
+    spill();
+    wait(2500,msec);
+    stopall();
+    pid(-10);
+    pid(10);
+    spill();
+    wait(2500,msec);
+    stopall();
+  }
   std::cout<<"auton time: "<<Brain.timer(timeUnits::msec)-time<<std::endl;
 
 
