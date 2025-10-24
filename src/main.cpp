@@ -287,7 +287,7 @@ int main() {
 
   // auton
   double time=Brain.timer(timeUnits::msec);
-  int auton = 6;
+  int auton = 7;
   if (auton==1){
     eat();
     pid(100);
