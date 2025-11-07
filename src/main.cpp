@@ -7,6 +7,8 @@ using namespace vex;
 brain Brain;
 controller Controller1 = controller(primary); 
 
+//sensors
+inertial InertialSensor(PORT3); 
 // ---- Device Setup ----
 motor BottomIntake = motor(PORT6, ratio18_1, false);
 motor UpOrDown     = motor(PORT10, ratio18_1, false);
@@ -40,6 +42,31 @@ double maxSpeedGlobal = 45;  // maximum % motor output (set lower to slow everyt
 
 //
 double global_distance_scalar=0.211;
+
+
+
+void eat(void){
+  BottomIntake.spin(forward, 100, percent);
+}
+void scoretop(void){
+  BottomIntake.spin(forward, 100, percent);
+  UpperIntake.spin(forward, 100, percent);
+  UpOrDown.spin(reverse, 100, percent);
+}
+void scorebottom(void){
+  UpOrDown.spin(forward, 100, percent);
+  BottomIntake.spin(forward, 100, percent);
+  UpperIntake.spin(forward, 100, percent);
+}
+void spill(void){
+  BottomIntake.spin(reverse, 100, percent);
+  UpperIntake.spin(reverse, 100, percent);
+}
+void stopall(void){
+  BottomIntake.stop(brake);
+  UpperIntake.stop(brake);
+  UpOrDown.stop(brake);
+}
 
 void drivePID(double targetDistanceInches, double maxSpeed = maxSpeedGlobal, int timeout = 9999999) {
   // Reset positions
@@ -189,10 +216,6 @@ void turnPID(double targetDegrees) {
 void pid(double distance, int timeout=9999999){
   drivePID(distance*global_distance_scalar,maxSpeedGlobal, timeout);
 }
-
-// user driving control
-controller Controller1 = controller(primary);
-
 void drive(double forward, double turn) {
   double leftSpeed = forward + turn*0.65;
   double rightSpeed = forward - turn*0.65;
@@ -302,29 +325,6 @@ void usercontrol(void) {
   }
 }
 
-
-void eat(void){
-  BottomIntake.spin(forward, 100, percent);
-}
-void scoretop(void){
-  BottomIntake.spin(forward, 100, percent);
-  UpperIntake.spin(forward, 100, percent);
-  UpOrDown.spin(reverse, 100, percent);
-}
-void scorebottom(void){
-  UpOrDown.spin(forward, 100, percent);
-  BottomIntake.spin(forward, 100, percent);
-  UpperIntake.spin(forward, 100, percent);
-}
-void spill(void){
-  BottomIntake.spin(reverse, 100, percent);
-  UpperIntake.spin(reverse, 100, percent);
-}
-void stopall(void){
-  BottomIntake.stop(brake);
-  UpperIntake.stop(brake);
-  UpOrDown.stop(brake);
-}
 
 int main() {
   Brain.Screen.print("Calibrating Inertial...");
