@@ -474,7 +474,7 @@ int main() {
 
   // auton
   double time=Brain.timer(timeUnits::msec);
-  int auton=2;
+  int auton=3;
   int ttest=0;
   if (ttest==1){
     if (auton==0){
@@ -611,13 +611,24 @@ int main() {
       pid(20);
       wait(1000,msec);
       toungeSet(false);
-      turnPID(-90);
+      turnPID(-87);
       maxSpeedGlobal=65;
-      pid(-42);
+      pid(-40);
       stop();
       scoreUp();
       wait(2500,msec);
       stop();
+      pid(140);
+      wait(500,msec);
+      turnPID(-45);
+      toungeSet(true);
+      store();
+      pid(100);
+      wait(1000,msec);
+      pid(-120);
+      stop();
+      scoreUp();
+      wait(2500,msec);
     }
     else if (auton==4){
       pid(17);
