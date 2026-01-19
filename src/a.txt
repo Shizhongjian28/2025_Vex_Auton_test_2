@@ -1,0 +1,343 @@
+#include "vex.h"
+#include <string>
+
+using namespace vex;
+
+// A global instance of competition
+competition Competition;
+
+// define your global instances of motors and other devices here
+brain Brain;
+controller Controller1;
+
+motor L3 = motor(PORT11, ratio6_1, true);
+motor L2 = motor(PORT12, ratio6_1, true);
+motor L1 = motor(PORT13, ratio6_1, true);
+
+motor R1 = motor(PORT18, ratio6_1, false);
+motor R2 = motor(PORT19, ratio6_1, false);
+motor R3 = motor(PORT20, ratio6_1, false);
+
+motor upperIntake = motor(PORT10, ratio6_1, false);
+motor lowerIntake = motor(PORT1, ratio6_1, false);
+
+motor_group leftMotors = motor_group(L1, L2, L3);
+motor_group rightMotors = motor_group(R1, R2, R3);
+
+digital_out hook = digital_out(Brain.ThreeWirePort.A);
+digital_out tounge = digital_out(Brain.ThreeWirePort.B);
+
+void pre_auton(void) {
+  Brain.Screen.clearScreen();
+  Brain.Screen.setCursor(1, 1);
+  Brain.Screen.print("Grants9thRobot - PRE-AUTON");
+}
+
+void pre_auton(void) {
+  Brain.Screen.clearScreen();
+  Brain.Screen.setCursor(1, 1);
+  Brain.Screen.print("Grants9thRobot - PRE-AUTON");
+  
+  // All activities that occur before the competition starts
+  // Example: clearing encoders, setting servo positions, ...
+}
+
+void drive(double forward, double turn){
+  double turningSensativity = 0.55;
+
+  double leftSpeed = forward + turn*turningSensativity;
+  double rightSpeed = forward - turn*turningSensativity;
+
+  if (leftSpeed > 100) {
+    leftSpeed = 100;
+  }
+  if (leftSpeed < -100) {
+    leftSpeed = -100;
+  }
+  if (rightSpeed > 100) {
+    rightSpeed = 100;
+  }
+  if (rightSpeed < -100) {
+    rightSpeed = -100;
+  }
+  
+  leftMotors.spin(directionType::fwd, leftSpeed, velocityUnits::pct);
+  rightMotors.spin(directionType::fwd, rightSpeed, velocityUnits::pct);
+}
+
+void scoreUp(){
+  upperIntake.spin(directionType::fwd, 100, velocityUnits::pct);
+  lowerIntake.spin(directionType::fwd, 100, velocityUnits::pct);
+}
+
+void scoreMiddle(){
+  lowerIntake.spin(directionType::fwd, 70, velocityUnits::pct);
+}
+
+void store(){
+  lowerIntake.spin(directionType::fwd, 100, velocityUnits::pct);
+  //upperIntake.spin(directionType::rev, 10, velocityUnits::pct);
+}
+
+void dump(){
+  upperIntake.spin(directionType::rev, 100, velocityUnits::pct);
+  lowerIntake.spin(directionType::rev, 100, velocityUnits::pct);
+}
+
+void stop(){
+  upperIntake.stop(brakeType::hold);
+  lowerIntake.stop(brakeType::hold);
+}
+
+void hookSet(bool state){
+  hook.set(state);
+}
+
+void toungeSet(bool state){
+  tounge.set(state);
+}
+
+
+oid autonomous(void) {
+  Brain.Screen.clearScreen();
+  Brain.Screen.setCursor(1, 1);
+  Brain.Screen.print("Grants9thRobot - AUTONOMOUS");
+  
+  // ..........................................................................
+  // Insert autonomous user code here.
+  // ..........................................................................
+
+  Brain.Screen.setCursor(2, 1);
+  Brain.Screen.print("No AUTONOMOUS AVAILABLE");
+}
+
+
+void usercontrol(void) {
+  double currentForward = 0.0;
+  double currentTurn = 0.0;
+    
+  std::string fullText = "我发现了,喜欢这件事没有什么前后左右,喜欢就是喜欢,单纯的喜欢.我坦白了我已经喜欢emma 3 年了,很多人就经常会问了,我说了,我喜欢她有主要三点原因,首先颜值高,可能有的人看不出来,但对我的品味来说就是好看,也不是所有的混血儿我的觉得好看,我觉得Emma的长相有自己的特别之处,让我特别喜欢的特别之处.第二点,她成绩好,比我好多了,人还很聪明,这样的人以后不会有差的结果的.最后一点也是最重要的一点就是性格了,反正这么多年都过了我还是全盘托出吧.首先emma 她很外向就是社牛,跟我一样,我也是一个外向且爱社交的人,众所周知外向的人跟外向的人很般配的.而且我感觉她说话的口吻很适合我,不只是声音好听,觉得说话的用词啊,就是感觉会不一样.还有一点很重要的就是emma善于聊天,跟我比较像,能延续一直聊下去,如果一个话题聊完了还有无数个话题接踵而至.原因说完了,我来说一下我俩的历史吧,详细版.首先在五年级的时候,我是基本上不知道emma这个人存在的,六年级才基本了解到她了,应为我跟她是一个homebase的吗.随后过了一段时间以后,ben就突然告诉我她喜欢emma,我本来就觉得emma挺有意思了,ben这么一说我心想ben这么厉害的人怎么会被沦陷呢,这到底是什么样的一个人所以我开始了我的观察.没想到无语的是emma把我惊到了,怎么会有这么全面的人啊,我也被沦陷了.我当时痴迷到什么程度呢,上课时会偷看(现在其实有时候也会)怎么偷看呢,把手遮住脸用在左边霍右边用手指打开一个缝隙然后把眼睛转到她脸上仔细观察(这张脸似乎永远也看不腻)还有观察她,观察她的生活(我能自信的说此时此刻,其实我们年级我能说基本上我是最了解她的人之一,有些可能她忘了的事我还记得,或者别人不知道的,这显明了我的态度).这边就说完了,来说说我和ben怎么互相聊天,我们六年级的时候百分之70的时间都在聊emma而且经常把emma 说成她.当时我们两个还经常搜怎么让一个女生喜欢上我,怎么知道一个女生喜不喜欢我,这种文章.我来讲一下我们俩当时有多痴迷,当时如果emma跟哪怕说一句话我都会开心的不得了,老跟ben比一天跟emma说了几句话(当时还会记录下啦)我还记得做过一场表白成功的梦,那场梦让我开心了整整一个月.当时也就是我置顶emma那段时候,转眼间我们都跟emma有了不错的进展成为了基本的朋友,七年级了.我感觉七年级时比较烦的一年所以我就快速说了.首先在七年级的初始阶段,我跟她关系很好,每天老会一起唱抖音上那些火遍大山南北的歌.学期中旬javan在art的时候说了两句话,基本上彻底毁了我和ben6年级的所有成就,他说了emma tiger 和ben 像……你(当时不懂……的意思现在懂了)随后emma后面一整年都没怎么理我,ben也宣布放弃了.八年级开始了,我和emma的关系依旧没有什么好转,但一件简单的事让我把深入谷底的感情硬生生的给拉回来了(这段路太艰难了).在人文课上人文老师把我的座位移到了emma的桌子,做她的正对面,经过我的死缠烂打,emma开始跟我聊天了,什么都聊,也聊过私人的问题.(这就是为什么我说我非常了解她,你们要问什么问题我基本上都答得上来).后面我就得新冠了,每天跟jet打电话,在的时候一个惊人的事发生了Emma自从6年级微信把我拉回来了,疫情时候接踵而至.这段是我最喜欢的时候,因为这是我跟Emma感情的巅峰,我们基本无话不谈,甚至上课都会打电话.后面就回到了学校过上了正常的好朋友生活(我能说我基本上是跟emma关系最好的异性).就昨天不是boat dance 吗,我走过了走廊的厕所,正好emma换好了衣服出来吗,我眼睛看到了她,我简直只能说美若天仙,如天神下凡一般,穿的衣服虽然我预判到了要穿这种衣服,但没想到会这么好看.我的心开始了跳动,到现在也难以忘怀.我要继续加油争取机会.总结:我喜欢Emma Jill Wilemsem 别问我为什么知道全名,我不管别人怎么说,舔狗也好,重色轻友也好,我就是喜欢，纯喜欢";
+  
+  
+  int textLength = fullText.length();
+  int displayWidth = 32; 
+  int scrollDelay = 200; 
+  
+  int scrollPosition = 0;
+  int lastScrollTime = 0;
+  int lastStatusUpdate = 0;
+  int statusUpdateDelay = 500; 
+
+  bool tigersHeart = false; 
+  bool emmaVibrationEnabled = true; 
+  bool textScrollEnabled = true;
+  int leftButtonCounter = 0;
+  int upButtonCounter = 0;
+  bool buttonLeftWasPressed = false;
+  bool buttonUpWasPressed = false;
+  int lastBrainUpdate = 0;
+  int brainUpdateDelay = 1000;
+  int tigerKeepSpammingTheButtonLMAO = 67;
+
+  int badTemperature = 50;
+
+  bool hookStatus = false;
+  bool toungeStatus = false;
+  int lastHookToggleTime = 0; 
+  int lastToungeToggleTime = 0;
+  bool buttonBWasPressed = false; 
+  bool buttonDownWasPressed = false;
+
+  Brain.Screen.clearScreen();
+
+  // User control code here, inside the loop
+  while (1) {
+    if (Brain.Timer.time(msec) - lastBrainUpdate >= brainUpdateDelay) {
+      Brain.Screen.setCursor(1, 1);
+      Brain.Screen.print("Grants9thRobot - DRIVER    ");
+      
+      Brain.Screen.setCursor(2, 1);
+      Brain.Screen.print("Bat:%d%% %.1fC %.1fV     ", 
+        Brain.Battery.capacity(),
+        Brain.Battery.temperature(temperatureUnits::celsius),
+        Brain.Battery.voltage());
+      
+      motor* motors[] = {&L1, &L2, &L3, &R1, &R2, &R3, &upperIntake, &lowerIntake};
+      char* names[] = {"L1", "L2", "L3", "R1", "R2", "R3", "UI", "LI"};
+      
+      for (int i = 0; i < 8; i++) {
+        Brain.Screen.setCursor(3 + i, 1);
+        Brain.Screen.print("%s:%dv %dA %dW %dNm %d%% %dC  ",
+          names[i],
+          (int)motors[i]->velocity(velocityUnits::pct),
+          (int)motors[i]->current(currentUnits::amp),
+          (int)motors[i]->power(powerUnits::watt),
+          (int)motors[i]->torque(torqueUnits::Nm),
+          (int)motors[i]->efficiency(percentUnits::pct),
+          (int)motors[i]->temperature(temperatureUnits::celsius));
+      }
+      
+      lastBrainUpdate = Brain.Timer.time(msec);
+    }
+    
+    if (Brain.Timer.time(msec) - lastStatusUpdate >= statusUpdateDelay) {
+      Controller1.Screen.setCursor(1, 1);
+      int totalSeconds = Brain.Timer.time(msec) / 1000; 
+      int minutes = totalSeconds / 60;
+      int seconds = totalSeconds % 60;
+      int battery = Brain.Battery.capacity();
+      Controller1.Screen.print("%d:%02d %d%% %.1fC  ", minutes, seconds, battery);
+      
+      Controller1.Screen.setCursor(3, 1);
+      std::string warning = "";
+      if (L1.temperature(temperatureUnits::celsius) > badTemperature) {
+        warning += "L1 ";
+      }
+      if (L2.temperature(temperatureUnits::celsius) > badTemperature) {
+        warning += "L2 ";
+      }
+      if (L3.temperature(temperatureUnits::celsius) > badTemperature) {
+        warning += "L3 ";
+      }
+      if (R1.temperature(temperatureUnits::celsius) > badTemperature) {
+        warning += "R1 ";
+      }
+      if (R2.temperature(temperatureUnits::celsius) > badTemperature) {
+        warning += "R2 ";
+      }
+      if (R3.temperature(temperatureUnits::celsius) > badTemperature) {
+        warning += "R3 ";
+      }
+      if (upperIntake.temperature(temperatureUnits::celsius) > badTemperature) {
+        warning += "UI ";
+      }
+      if (lowerIntake.temperature(temperatureUnits::celsius) > badTemperature) {
+        warning += "LI ";
+      }
+      
+      if (!warning.empty()) {
+        Controller1.Screen.print("HOT:%s", warning.c_str());
+      } else {
+        Controller1.Screen.print("                         ");
+      }
+      
+      lastStatusUpdate = Brain.Timer.time(msec);
+    }                                                                                              
+    
+    if (Brain.Timer.time(msec) - lastScrollTime >= scrollDelay) {
+      if (textScrollEnabled) {
+        Controller1.Screen.setCursor(2, 1);
+        std::string chunk = fullText.substr(scrollPosition, displayWidth);
+        Controller1.Screen.print(chunk.c_str());
+        std::string chunkLower = chunk;
+        for (char &c : chunkLower) {
+          c = tolower(c);
+        }
+        if (chunkLower.find("emma") != std::string::npos && !tigersHeart) {
+          // Morse code for emma: . -- -- .-
+          if (emmaVibrationEnabled) {
+            Controller1.rumble(". -- -- .-");
+          }
+          tigersHeart = true;
+        } else if (chunkLower.find("emma") == std::string::npos) {
+          tigersHeart = false;
+        }
+        scrollPosition += 3;
+      } else {
+        Controller1.Screen.setCursor(2, 1);
+        Controller1.Screen.print("                                ");
+      }
+      lastScrollTime = Brain.Timer.time(msec);
+    }
+    
+    if (Controller1.ButtonUp.pressing() && !buttonUpWasPressed) {
+      buttonUpWasPressed = true;
+      upButtonCounter++;
+      if (upButtonCounter >= tigerKeepSpammingTheButtonLMAO) {
+        textScrollEnabled = !textScrollEnabled;
+        upButtonCounter = 0;
+      }
+    } 
+    else if (!Controller1.ButtonUp.pressing()) {
+      buttonUpWasPressed = false;
+    }
+
+    if (Controller1.ButtonLeft.pressing() && !buttonLeftWasPressed) {
+      buttonLeftWasPressed = true;
+      leftButtonCounter++;
+      if (leftButtonCounter >= tigerKeepSpammingTheButtonLMAO) {
+        emmaVibrationEnabled = !emmaVibrationEnabled;
+        leftButtonCounter = 0;
+      }
+    } 
+    else if (!Controller1.ButtonLeft.pressing()) {
+      buttonLeftWasPressed = false;
+    }
+
+    double targetForward = Controller1.Axis3.position(percentUnits::pct);
+    double targetTurn = Controller1.Axis1.position(percentUnits::pct);
+
+    currentForward = targetForward;
+    currentTurn = targetTurn;
+
+    if (Controller1.ButtonR1.pressing()) {
+      store();
+    } 
+    else if (Controller1.ButtonR2.pressing()) {
+      scoreUp();
+    } 
+    else if (Controller1.ButtonL1.pressing()) {
+      dump();
+    } 
+    else if (Controller1.ButtonL2.pressing()) {
+      scoreMiddle();
+    } 
+    else if (Controller1.ButtonDown.pressing()) {
+      buttonBWasPressed = true;
+    } 
+    else if (Controller1.ButtonB.pressing()) {
+      buttonDownWasPressed = true;
+    }
+    else if (buttonBWasPressed) {
+      int now = Brain.Timer.time(msec);
+      if (now - lastHookToggleTime >= 500) {
+        hookStatus = !hookStatus;
+        hookSet(hookStatus);
+        lastHookToggleTime = now;
+      }
+      buttonBWasPressed = false;
+    }
+    else if (buttonDownWasPressed) {
+      int now = Brain.Timer.time(msec);
+      if (now - lastHookToggleTime >= 500) {
+        toungeStatus = !toungeStatus;
+        toungeSet(toungeStatus);
+        lastToungeToggleTime = now;
+      }
+      buttonDownWasPressed = false;
+    }
+    else {
+      stop();
+    }
+
+    drive(currentForward, currentTurn);
+
+    wait(20, msec); // Sleep the task for a short amount of time to
+                    // prevent wasted resources.
+  } 
+}
+
+
+int main() {
+  // Set up callbacks for autonomous and driver control periods.
+  Competition.autonomous(autonomous);
+  Competition.drivercontrol(usercontrol);
+
+  // Run the pre-autonomous function.
+  pre_auton();
+
+  // Prevent main from exiting with an infinite loop.
+  while (true) {
+    wait(100, msec);
+  }
+}

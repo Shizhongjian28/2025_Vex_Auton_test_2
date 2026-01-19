@@ -10,62 +10,80 @@ controller Controller1 = controller(primary);
 //sensors
 inertial InertialSensor(PORT3); 
 // ---- Device Setup ----
-motor BottomIntake = motor(PORT6, ratio18_1, false);
-motor UpOrDown     = motor(PORT10, ratio18_1, false);
-motor UpperIntake  = motor(PORT2, ratio18_1, false);
 
-motor leftMotor1(PORT19, ratio18_1, true);
-motor leftMotor2(PORT16, ratio18_1, true);
-motor leftMotor3(PORT17, ratio18_1, true);
-motor rightMotor1(PORT20, ratio18_1, false);
-motor rightMotor2(PORT18, ratio18_1, false);
-motor rightMotor3(PORT8,  ratio18_1, false);
+motor L3 = motor(PORT11, ratio6_1, true);
+motor L2 = motor(PORT12, ratio6_1, true);
+motor L1 = motor(PORT13, ratio6_1, true);
 
-motor_group leftMotors(leftMotor1, leftMotor2, leftMotor3);
-motor_group rightMotors(rightMotor1, rightMotor2, rightMotor3);
+motor R1 = motor(PORT18, ratio6_1, false);
+motor R2 = motor(PORT19, ratio6_1, false);
+motor R3 = motor(PORT20, ratio6_1, false);
+
+motor upperIntake = motor(PORT10, ratio6_1, false);
+motor lowerIntake = motor(PORT1, ratio6_1, false);
+
+motor_group leftMotors = motor_group(L1, L2, L3);
+motor_group rightMotors = motor_group(R1, R2, R3);
+
+digital_out hook = digital_out(Brain.ThreeWirePort.A);
+digital_out tounge = digital_out(Brain.ThreeWirePort.B);
+
 
 digital_out doinker = digital_out(Brain.ThreeWirePort.B);
 // --- PID constants ---
-double kP = 60;
-double kI = 10;
-double kD = 20;
+double kP = 0.2;
+double kI = 0.001;
+double kD = 2;
+double kT=60;
+// drive good 20260107: 0.2, 0.001, 2
+
+
 
 // --- Straight correction constant ---
 double kTurn = 0.05; // how much to correct difference between sides
 
 // --- Acceleration & Deceleration control ---
-double maxAccel = 2;   // % increase per loop (20ms)
-double maxDecel = 2;   // % decrease per loop (20ms)
+double maxAccel = 1.1;   // % increase per loop (20ms)
+double maxDecel = 1.1;   // % decrease per loop (20ms)
 
 // --- Global speed limit ---
-double maxSpeedGlobal = 45;  // maximum % motor output (set lower to slow everything down)
+double maxSpeedGlobal = 40;  // maximum % motor output (set lower to slow everything down)
 
 //
-double global_distance_scalar=0.211;
+double global_distance_scalar=0.5;
 
 
 
-void eat(void){
-  BottomIntake.spin(forward, 100, percent);
+void scoreUp(){
+  upperIntake.spin(directionType::fwd, -100, velocityUnits::pct);
+  lowerIntake.spin(directionType::fwd, 100, velocityUnits::pct);
 }
-void scoretop(void){
-  BottomIntake.spin(forward, 100, percent);
-  UpperIntake.spin(forward, 100, percent);
-  UpOrDown.spin(reverse, 100, percent);
+
+void scoreMiddle(){
+  lowerIntake.spin(directionType::fwd, 70, velocityUnits::pct);
 }
-void scorebottom(void){
-  UpOrDown.spin(forward, 100, percent);
-  BottomIntake.spin(forward, 100, percent);
-  UpperIntake.spin(forward, 100, percent);
+
+void store(){
+  lowerIntake.spin(directionType::fwd, 100, velocityUnits::pct);
+  //upperIntake.spin(directionType::rev, 10, velocityUnits::pct);
 }
-void spill(void){
-  BottomIntake.spin(reverse, 100, percent);
-  UpperIntake.spin(reverse, 100, percent);
+
+void dump(){
+  upperIntake.spin(directionType::fwd, 100, velocityUnits::pct);
+  lowerIntake.spin(directionType::rev, 100, velocityUnits::pct);
 }
-void stopall(void){
-  BottomIntake.stop(brake);
-  UpperIntake.stop(brake);
-  UpOrDown.stop(brake);
+
+void stop(){
+  upperIntake.stop(brakeType::hold);
+  lowerIntake.stop(brakeType::hold);
+}
+
+void hookSet(bool state){
+  hook.set(state);
+}
+
+void toungeSet(bool state){
+  tounge.set(state);
 }
 
 void drivePID(double targetDistanceInches, double maxSpeed = maxSpeedGlobal, int timeout = 9999999) {
@@ -127,7 +145,7 @@ void drivePID(double targetDistanceInches, double maxSpeed = maxSpeedGlobal, int
     rightMotors.spin(forward, currentRightSpeed, pct);
 
     // Exit condition: target reached OR timeout exceeded
-    if (fabs(error) < 10) break; // within 10 degrees of target
+    if (fabs(error) < 20) break;
 
     int elapsed = vex::timer::system() - startTime;
     if (elapsed > timeout) {
@@ -145,19 +163,24 @@ void drivePID(double targetDistanceInches, double maxSpeed = maxSpeedGlobal, int
 
 double turnThreshold = 1.0; // degrees tolerance
 void turnPID(double targetDegrees) {
-  // PID constants — tune these!
+  // past pid
   // 0.7, 0.005, 4.5
-  double kP = 0.63; 
+  // 0.63, 0.005, 3.8
+
+  // new pid values
+  // for 45: 0.5, 0.005, 1
+  // for 90: 0.6, 0.005, 3.5
+  double kP = 0.6; 
   double kI = 0.005;
-  double kD = 3.8;
-  if (std::abs(targetDegrees)<145){
-    kP=0.65;
-    kD=3.8;
-  }
-  if (std::abs(targetDegrees)<100){
-    kP=0.75;
-    kD=5;
-  }
+  double kD = 3.5;
+  // if (std::abs(targetDegrees)<145){
+  //   kP=0.65;
+  //   kD=3.8;
+  // }
+  // if (std::abs(targetDegrees)<100){
+  //   kP=0.75;
+  //   kD=5;
+  // }
   double error = 0;
   double previousError = 0;
   double derivative = 0;
@@ -217,16 +240,25 @@ void pid(double distance, int timeout=9999999){
   drivePID(distance*global_distance_scalar,maxSpeedGlobal, timeout);
 }
 void drive(double forward, double turn) {
-  double leftSpeed = forward + turn*0.65;
-  double rightSpeed = forward - turn*0.65;
+  double turningSensativity = 0.55;
 
-  if (leftSpeed > 100) leftSpeed = 100;
-  if (leftSpeed < -100) leftSpeed = -100;
-  if (rightSpeed > 100) rightSpeed = 100;
-  if (rightSpeed < -100) rightSpeed = -100;
+  double leftSpeed = forward + turn*turningSensativity;
+  double rightSpeed = forward - turn*turningSensativity;
+
+  if (leftSpeed > 100) {
+    leftSpeed = 100;
+  }
+  if (leftSpeed < -100) {
+    leftSpeed = -100;
+  }
+  if (rightSpeed > 100) {
+    rightSpeed = 100;
+  }
+  if (rightSpeed < -100) {
+    rightSpeed = -100;
+  }
   
   leftMotors.spin(directionType::fwd, leftSpeed, velocityUnits::pct);
-  
   rightMotors.spin(directionType::fwd, rightSpeed, velocityUnits::pct);
 
 }
@@ -244,87 +276,191 @@ double expoCurve(double input, double exponent) {
   return curved * 100.0; // back to -100..100
 }
 
-void usercontrol(void) {  
-  bool buttonBPressed = false;
-  bool upPressed = false;
-  bool downPressed = false;
+void usercontrol(void) {
+  double currentForward = 0.0;
+  double currentTurn = 0.0;
+  
+  int displayWidth = 32; 
+  int scrollDelay = 200; 
+  
+  int scrollPosition = 0;
+  int lastScrollTime = 0;
+  int lastStatusUpdate = 0;
+  int statusUpdateDelay = 500; 
 
-  // Adjustable variables
-  double sensitivity = 0.8;   // overall drive power
-  double expoForward = 1.5;   // forward/backward curve steepness
-  double expoTurn = 1.3;      // turning curve steepness
+  bool tigersHeart = false; 
+  bool emmaVibrationEnabled = true; 
+  bool textScrollEnabled = true;
+  int leftButtonCounter = 0;
+  int upButtonCounter = 0;
+  bool buttonLeftWasPressed = false;
+  bool buttonUpWasPressed = false;
+  int lastBrainUpdate = 0;
+  int brainUpdateDelay = 1000;
+  int tigerKeepSpammingTheButtonLMAO = 67;
+
+  int badTemperature = 50;
+
+  bool hookStatus = false;
+  bool toungeStatus = false;
+  int lastHookToggleTime = 0; 
+  int lastToungeToggleTime = 0;
+  bool buttonBWasPressed = false; 
+  bool buttonDownWasPressed = false;
 
   Brain.Screen.clearScreen();
-  Brain.Screen.printAt(10, 20, "Starting driver control...");
 
-  while (true) {
-    // ---- Adjust sensitivity with up/down arrows ----
-    if (Controller1.ButtonUp.pressing() && !upPressed) {
-      sensitivity += 0.05;
-      if (sensitivity > 1.2) sensitivity = 1.2;
-      upPressed = true;
-    } else if (!Controller1.ButtonUp.pressing()) upPressed = false;
-
-    if (Controller1.ButtonDown.pressing() && !downPressed) {
-      sensitivity -= 0.05;
-      if (sensitivity < 0.4) sensitivity = 0.4;
-      downPressed = true;
-    } else if (!Controller1.ButtonDown.pressing()) downPressed = false;
-
-    // ---- Adjust exponential steepness live ----
-    if (Controller1.ButtonY.pressing()) expoForward += 0.05;
-    if (Controller1.ButtonA.pressing()) expoForward -= 0.05;
-    if (Controller1.ButtonX.pressing()) expoTurn += 0.05;
-    if (Controller1.ButtonB.pressing()) expoTurn -= 0.05;
-
-    // Clamp exponents
-    if (expoForward < 1.0) expoForward = 1.0;
-    if (expoForward > 3.0) expoForward = 3.0;
-    if (expoTurn < 1.0) expoTurn = 1.0;
-    if (expoTurn > 3.0) expoTurn = 3.0;
-
-    // ---- Read controller joysticks ----
-    double forward = expoCurve(Controller1.Axis3.position(), expoForward);
-    double turn = expoCurve(Controller1.Axis1.position(), expoTurn);
-
-    forward *= sensitivity;
-    turn *= sensitivity * 0.40;
-
-    // ---- Drive motors ----
-    double deadband = 5;
-    if (fabs(forward) < deadband && fabs(turn) < deadband) {
-      leftMotors.stop(brake);
-      rightMotors.stop(brake);
-    } else {
-      leftMotors.setVelocity(forward + turn, percent);
-      rightMotors.setVelocity(forward - turn, percent);
-      leftMotors.spin(fwd);
-      rightMotors.spin(fwd);
+  // User control code here, inside the loop
+  while (1) {
+    if (Brain.Timer.time(msec) - lastBrainUpdate >= brainUpdateDelay) {
+      Brain.Screen.setCursor(1, 1);
+      Brain.Screen.print("Grants9thRobot - DRIVER    ");
+      
+      Brain.Screen.setCursor(2, 1);
+      Brain.Screen.print("Bat:%d%% %.1fC %.1fV     ", 
+        Brain.Battery.capacity(),
+        Brain.Battery.temperature(temperatureUnits::celsius),
+        Brain.Battery.voltage());
+      
+      motor* motors[] = {&L1, &L2, &L3, &R1, &R2, &R3, &upperIntake, &lowerIntake};
+      char* names[] = {"L1", "L2", "L3", "R1", "R2", "R3", "UI", "LI"};
+      
+      for (int i = 0; i < 8; i++) {
+        Brain.Screen.setCursor(3 + i, 1);
+        Brain.Screen.print("%s:%dv %dA %dW %dNm %d%% %dC  ",
+          names[i],
+          (int)motors[i]->velocity(velocityUnits::pct),
+          (int)motors[i]->current(currentUnits::amp),
+          (int)motors[i]->power(powerUnits::watt),
+          (int)motors[i]->torque(torqueUnits::Nm),
+          (int)motors[i]->efficiency(percentUnits::pct),
+          (int)motors[i]->temperature(temperatureUnits::celsius));
+      }
+      
+      lastBrainUpdate = Brain.Timer.time(msec);
+    }
+    
+    if (Brain.Timer.time(msec) - lastStatusUpdate >= statusUpdateDelay) {
+      Controller1.Screen.setCursor(1, 1);
+      int totalSeconds = Brain.Timer.time(msec) / 1000; 
+      int minutes = totalSeconds / 60;
+      int seconds = totalSeconds % 60;
+      int battery = Brain.Battery.capacity();
+      Controller1.Screen.print("%d:%02d %d%% %.1fC  ", minutes, seconds, battery);
+      
+      Controller1.Screen.setCursor(3, 1);
+      std::string warning = "";
+      if (L1.temperature(temperatureUnits::celsius) > badTemperature) {
+        warning += "L1 ";
+      }
+      if (L2.temperature(temperatureUnits::celsius) > badTemperature) {
+        warning += "L2 ";
+      }
+      if (L3.temperature(temperatureUnits::celsius) > badTemperature) {
+        warning += "L3 ";
+      }
+      if (R1.temperature(temperatureUnits::celsius) > badTemperature) {
+        warning += "R1 ";
+      }
+      if (R2.temperature(temperatureUnits::celsius) > badTemperature) {
+        warning += "R2 ";
+      }
+      if (R3.temperature(temperatureUnits::celsius) > badTemperature) {
+        warning += "R3 ";
+      }
+      if (upperIntake.temperature(temperatureUnits::celsius) > badTemperature) {
+        warning += "UI ";
+      }
+      if (lowerIntake.temperature(temperatureUnits::celsius) > badTemperature) {
+        warning += "LI ";
+      }
+      
+      if (!warning.empty()) {
+        Controller1.Screen.print("HOT:%s", warning.c_str());
+      } else {
+        Controller1.Screen.print("                         ");
+      }
+      
+      lastStatusUpdate = Brain.Timer.time(msec);
+    }                                                                                              
+    
+    
+    if (Controller1.ButtonUp.pressing() && !buttonUpWasPressed) {
+      buttonUpWasPressed = true;
+      upButtonCounter++;
+      if (upButtonCounter >= tigerKeepSpammingTheButtonLMAO) {
+        textScrollEnabled = !textScrollEnabled;
+        upButtonCounter = 0;
+      }
+    } 
+    else if (!Controller1.ButtonUp.pressing()) {
+      buttonUpWasPressed = false;
     }
 
-    // ---- Intake + Lift ----
-    if (Controller1.ButtonR1.pressing()) eat();
-    else if (Controller1.ButtonR2.pressing()) spill();
-    else if (Controller1.ButtonL1.pressing()) scoretop();
-    else if (Controller1.ButtonL2.pressing()) scorebottom();
-    else stopall();
-
-    // ---- Doinker toggle ----
-    if (Controller1.ButtonB.pressing() && !buttonBPressed) {
-      toggleDoinker();
-      buttonBPressed = true;
-    } else if (!Controller1.ButtonB.pressing()) {
-      buttonBPressed = false;
+    if (Controller1.ButtonLeft.pressing() && !buttonLeftWasPressed) {
+      buttonLeftWasPressed = true;
+      leftButtonCounter++;
+      if (leftButtonCounter >= tigerKeepSpammingTheButtonLMAO) {
+        emmaVibrationEnabled = !emmaVibrationEnabled;
+        leftButtonCounter = 0;
+      }
+    } 
+    else if (!Controller1.ButtonLeft.pressing()) {
+      buttonLeftWasPressed = false;
     }
 
-    // ---- Display Info ----
-    Brain.Screen.clearScreen();
-    Brain.Screen.printAt(10, 20, "Sens: %.2f | F-Expo: %.2f | T-Expo: %.2f", sensitivity, expoForward, expoTurn);
+    double targetForward = Controller1.Axis3.position(percentUnits::pct);
+    double targetTurn = Controller1.Axis1.position(percentUnits::pct);
 
-    wait(20, msec);
-  }
+    currentForward = targetForward;
+    currentTurn = targetTurn;
+
+    if (Controller1.ButtonR1.pressing()) {
+      store();
+    } 
+    else if (Controller1.ButtonR2.pressing()) {
+      scoreUp();
+    } 
+    else if (Controller1.ButtonL1.pressing()) {
+      dump();
+    } 
+    else if (Controller1.ButtonL2.pressing()) {
+      scoreMiddle();
+    } 
+    else if (Controller1.ButtonDown.pressing()) {
+      buttonBWasPressed = true;
+    } 
+    else if (Controller1.ButtonB.pressing()) {
+      buttonDownWasPressed = true;
+    }
+    else if (buttonBWasPressed) {
+      int now = Brain.Timer.time(msec);
+      if (now - lastHookToggleTime >= 500) {
+        hookStatus = !hookStatus;
+        hookSet(hookStatus);
+        lastHookToggleTime = now;
+      }
+      buttonBWasPressed = false;
+    }
+    else if (buttonDownWasPressed) {
+      int now = Brain.Timer.time(msec);
+      if (now - lastHookToggleTime >= 500) {
+        toungeStatus = !toungeStatus;
+        toungeSet(toungeStatus);
+        lastToungeToggleTime = now;
+      }
+      buttonDownWasPressed = false;
+    }
+    else {
+      stop();
+    }
+
+    drive(currentForward, currentTurn);
+
+    wait(20, msec); // Sleep the task for a short amount of time to
+                    // prevent wasted resources.
+  } 
 }
-
 
 int main() {
   Brain.Screen.print("Calibrating Inertial...");
@@ -338,65 +474,192 @@ int main() {
 
   // auton
   double time=Brain.timer(timeUnits::msec);
-  int auton = 1;
-  if (auton==1){
-    //testing
-    pid(50);
-    turnPID(90);
-    pid(50);
-    turnPID(90);
-    pid(50);
-    turnPID(90);
-    pid(50);
-    turnPID(90);
+  int auton=2;
+  int ttest=0;
+  if (ttest==1){
+    if (auton==0){
+      pid(-95);
+      wait(1000,msec);
+      pid(80);
+
+    }
+    else if (auton==1){
+      pid(kT);
+      wait(1000,msec);
+      turnPID(90);
+      wait(1000,msec);
+      turnPID(-90);
+      wait(1000,msec);
+      pid(-kT);
+    }
+    else if (auton==2){
+      // turnPID(45);
+      // wait(1000,msec);
+      // turnPID(-45);
+      // wait(1000,msec);
+      turnPID(90);
+      wait(1000,msec);
+      turnPID(-90);
+      wait(1000,msec);
+      turnPID(180);
+      wait(1000,msec);
+      turnPID(-180);
+      wait(1000,msec);
+      turnPID(145);
+      wait(1000,msec);
+      turnPID(-145);
+      wait(1000,msec);
+    }
+    else if (auton==3){
+      pid(41);
+      turnPID(136);
+      store();
+      pid(139);
+      stop();
+      dump();
+      wait(1000,msec);
+      stop();
+      pid(-35);
+      turnPID(-48);
+      store();
+      maxSpeedGlobal=40;
+      pid(135);
+      wait(500,msec);
+      turnPID(-55);
+      pid(-30);
+      scoreMiddle();
+    }
   }
-  else if (auton==2){
-    // starting from right scoring bottom
-    pid(17);
-    turnPID(60);
-    eat();
-    maxSpeedGlobal=20;
-    pid(50);
-    wait(500,msec);
-    maxSpeedGlobal=65;
-    turnPID(-112);
-    pid(25);
-    stopall();
-    spill();
-    wait(2500,msec);
-    stopall();
-    spill();
-    wait(2500,msec);
-    stopall();
-    pid(-10);
-    pid(10);
-    spill();
-    wait(2500,msec);
-    stopall();
-  }
-  else if (auton==3){
-    // starting from left scoring middle
-    pid(17);
-    turnPID(-60);
-    eat();
-    maxSpeedGlobal=20;
-    pid(50);
-    wait(500,msec);
-    maxSpeedGlobal=65;
-    turnPID(112);
-    pid(25);
-    stopall();
-    scorebottom();
-    wait(2500,msec);
-    stopall();
-    scorebottom();
-    wait(2500,msec);
-    stopall();
-    pid(-10);
-    pid(10);
-    scorebottom();
-    wait(2500,msec);
-    stopall();
+  else {
+    if (auton==1){// solo awp
+      store();
+      maxSpeedGlobal=40;
+      pid(35);
+      maxSpeedGlobal=65;
+      pid(-155);
+      stop();
+      wait(250,msec);
+      turnPID(-100);
+      toungeSet(true);
+      store();
+      pid(45);
+      wait(500,msec);
+      pid(-85, 1500);
+      stop();
+      scoreUp();
+      toungeSet(false);
+      wait(1500,msec);
+      stop();
+      pid(39);
+      turnPID(138);
+      store();
+      pid(130);
+      stop();
+      dump();
+      wait(1000,msec);
+      stop();
+      pid(-35);
+      turnPID(-48);
+      store();
+      maxSpeedGlobal=40;
+      pid(135);
+      wait(500,msec);
+      turnPID(-55);
+      pid(-30);
+      scoreUp();
+      wait(1500,msec);
+      stop();
+
+
+    }
+    else if (auton==2){// starting from right scoring bottom
+      pid(30);
+      turnPID(60);
+      store();
+      pid(45);
+      toungeSet(true);
+      maxSpeedGlobal=20;
+      pid(20);
+      wait(500,msec);
+      toungeSet(false);
+      turnPID(-108);
+      maxSpeedGlobal=65;
+      pid(40);
+      stop();
+      dump();
+      wait(2500,msec);
+      stop();
+      pid(-120);
+      wait(500,msec);
+      turnPID(-135);
+      toungeSet(true);
+      store();
+      pid(100);
+      wait(1000,msec);
+      pid(-120);
+      stop();
+      scoreUp();
+      wait(2500,msec);
+    }
+    else if (auton==3){// starting from left scoring middle
+      pid(30);
+      turnPID(-60);
+      store();
+      pid(43);
+      toungeSet(true);
+      maxSpeedGlobal=20;
+      pid(20);
+      wait(1000,msec);
+      toungeSet(false);
+      turnPID(-90);
+      maxSpeedGlobal=65;
+      pid(-42);
+      stop();
+      scoreUp();
+      wait(2500,msec);
+      stop();
+    }
+    else if (auton==4){
+      pid(17);
+      turnPID(60);
+      store();
+      maxSpeedGlobal=20;
+      pid(50);
+      wait(500,msec);
+      maxSpeedGlobal=65;
+      turnPID(-112);
+      pid(25);
+      stop();
+      dump();
+      wait(1500,msec);
+      stop();
+      pid(-8);
+      wait(100,msec);
+      turnPID(100);
+      maxSpeedGlobal=40;
+      pid(30);
+      wait(100,msec);
+      turnPID(40);
+      wait(100,msec);
+      maxSpeedGlobal=25;
+      store();
+      pid(30);
+      wait(100,msec);
+      maxSpeedGlobal=65;
+      pid(-10);
+      turnPID(-105);
+      stop();
+      pid(-60);
+      turnPID(-95);
+      pid(-20);
+      turnPID(-88);
+      pid(-30);
+      maxSpeedGlobal=45;
+      pid(-10, 1000);
+      dump();
+      wait(3000,msec);
+      stop();
+    }
   }
   std::cout<<"auton time: "<<Brain.timer(timeUnits::msec)-time<<std::endl;
 
