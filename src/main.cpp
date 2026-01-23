@@ -19,7 +19,7 @@ motor R1 = motor(PORT18, ratio6_1, false);
 motor R2 = motor(PORT19, ratio6_1, false);
 motor R3 = motor(PORT20, ratio6_1, false);
 
-motor upperIntake = motor(PORT10, ratio6_1, false);
+motor upperIntake = motor(PORT16, ratio6_1, false);
 motor lowerIntake = motor(PORT1, ratio6_1, false);
 
 motor_group leftMotors = motor_group(L1, L2, L3);
@@ -162,7 +162,8 @@ void drivePID(double targetDistanceInches, double maxSpeed = maxSpeedGlobal, int
 
 
 double turnThreshold = 1.0; // degrees tolerance
-void turnPID(double targetDegrees) {
+void turnPID(double tD) {
+  double targetDegrees=tD/2;
   // past pid
   // 0.7, 0.005, 4.5
   // 0.63, 0.005, 3.8
@@ -474,14 +475,13 @@ int main() {
 
   // auton
   double time=Brain.timer(timeUnits::msec);
-  int auton=3;
+  int auton=5;
   int ttest=0;
   if (ttest==1){
     if (auton==0){
       pid(-95);
       wait(1000,msec);
       pid(80);
-
     }
     else if (auton==1){
       pid(kT);
@@ -493,10 +493,10 @@ int main() {
       pid(-kT);
     }
     else if (auton==2){
-      // turnPID(45);
-      // wait(1000,msec);
-      // turnPID(-45);
-      // wait(1000,msec);
+      turnPID(45);
+      wait(1000,msec);
+      turnPID(-45);
+      wait(1000,msec);
       turnPID(90);
       wait(1000,msec);
       turnPID(-90);
@@ -575,24 +575,28 @@ int main() {
     else if (auton==2){// starting from right scoring bottom
       pid(30);
       turnPID(60);
-      store();
-      pid(45);
+      // store();
       toungeSet(true);
-      maxSpeedGlobal=20;
-      pid(20);
+      pid(64);
       wait(500,msec);
       toungeSet(false);
       turnPID(-108);
       maxSpeedGlobal=65;
-      pid(40);
+      pid(39);
       stop();
       dump();
-      wait(2500,msec);
+      wait(1000,msec);
       stop();
+      maxDecel=100;
       pid(-120);
       wait(500,msec);
-      turnPID(-135);
+      turnPID(-140);
+      wait(500,msec);
+      pid(-50);
+      pid(-10,1000);
+      wait(500,msec);
       toungeSet(true);
+      pid(120);
       store();
       pid(100);
       wait(1000,msec);
@@ -670,6 +674,40 @@ int main() {
       dump();
       wait(3000,msec);
       stop();
+    }
+    else if (auton==5){// starting from right all score long goal
+      pid(32);
+      turnPID(35);
+      store();
+      pid(44);
+      toungeSet(true);
+      maxSpeedGlobal=20;
+      pid(20);
+      wait(500,msec);
+      toungeSet(false);
+      turnPID(70);
+      maxSpeedGlobal=65;
+      pid(90);
+      wait(500,msec);
+      turnPID(38);
+      toungeSet(true);
+      store();
+      pid(40);
+      wait(1000,msec);
+      pid(-130,2000);
+      stop();
+      dump();
+      wait(300,msec);
+      scoreUp();
+      wait(2500,msec);
+      pid(30);
+      wait(500,msec);
+      pid(-30);
+    }
+    else if (auton==6){
+      maxSpeedGlobal=40;
+      scoreUp();
+      pid(1000000);
     }
   }
   std::cout<<"auton time: "<<Brain.timer(timeUnits::msec)-time<<std::endl;
