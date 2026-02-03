@@ -241,28 +241,31 @@ void pid(double distance, int timeout=9999999){
   drivePID(distance*global_distance_scalar,maxSpeedGlobal, timeout);
 }
 void drive(double forward, double turn) {
-  double turningSensativity = 0.55;
+  double turningSensativity = 0.4;
 
-  double leftSpeed = forward + turn*turningSensativity;
-  double rightSpeed = forward - turn*turningSensativity;
+  // deadband (important)
+  if (fabs(forward) < 5) forward = 0;
+  if (fabs(turn) < 5) turn = 0;
 
-  if (leftSpeed > 100) {
-    leftSpeed = 100;
+  // If no input at all → BRAKE
+  if (forward == 0 && turn == 0) {
+    leftMotors.stop(brakeType::brake);   // or hold
+    rightMotors.stop(brakeType::brake);
+    return;
   }
-  if (leftSpeed < -100) {
-    leftSpeed = -100;
-  }
-  if (rightSpeed > 100) {
-    rightSpeed = 100;
-  }
-  if (rightSpeed < -100) {
-    rightSpeed = -100;
-  }
-  
-  leftMotors.spin(directionType::fwd, leftSpeed, velocityUnits::pct);
-  rightMotors.spin(directionType::fwd, rightSpeed, velocityUnits::pct);
 
+  double leftSpeed = forward + turn * turningSensativity;
+  double rightSpeed = forward - turn * turningSensativity;
+
+  if (leftSpeed > 100) leftSpeed = 100;
+  if (leftSpeed < -100) leftSpeed = -100;
+  if (rightSpeed > 100) rightSpeed = 100;
+  if (rightSpeed < -100) rightSpeed = -100;
+
+  leftMotors.spin(fwd, leftSpeed, pct);
+  rightMotors.spin(fwd, rightSpeed, pct);
 }
+
 
 void toggleDoinker() {
   static bool doinkerState = false;
@@ -413,6 +416,17 @@ void usercontrol(void) {
     double targetForward = Controller1.Axis3.position(percentUnits::pct);
     double targetTurn = Controller1.Axis1.position(percentUnits::pct);
 
+    // DEADZONE to stop turning drift
+    int deadband = 5;
+
+    if (fabs(targetTurn) < deadband) {
+      targetTurn = 0;
+    }
+
+    if (fabs(targetForward) < deadband) {
+      targetForward = 0;
+    }
+
     currentForward = targetForward;
     currentTurn = targetTurn;
 
@@ -476,7 +490,7 @@ int main() {
   // auton
   double time=Brain.timer(timeUnits::msec);
   int auton=5;
-  int ttest=0;
+  int ttest=3;
   if (ttest==1){
     if (auton==0){
       pid(-95);
@@ -530,7 +544,7 @@ int main() {
       scoreMiddle();
     }
   }
-  else {
+  else if (ttest==0) {
     if (auton==1){// solo awp
       store();
       maxSpeedGlobal=40;
