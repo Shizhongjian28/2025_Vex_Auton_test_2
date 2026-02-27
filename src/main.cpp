@@ -162,8 +162,7 @@ void drivePID(double targetDistanceInches, double maxSpeed = maxSpeedGlobal, int
 
 
 double turnThreshold = 1.0; // degrees tolerance
-void turnPID(double tD) {
-  double targetDegrees=tD/2;
+void turnPID(double targetDegrees) {
   // past pid
   // 0.7, 0.005, 4.5
   // 0.63, 0.005, 3.8
@@ -489,8 +488,8 @@ int main() {
 
   // auton
   double time=Brain.timer(timeUnits::msec);
-  int auton=5;
-  int ttest=3;
+  int auton=2;
+  int ttest=0;
   if (ttest==1){
     if (auton==0){
       pid(-95);
